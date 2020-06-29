@@ -25,6 +25,11 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>9.4.30.v20200611</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -56,6 +61,7 @@
               <manifest>
                 <addClasspath>true</addClasspath>
                 <mainClass>com.example.App</mainClass>
+                <classpathPrefix>dependency/</classpathPrefix>
               </manifest>
             </archive>
           </configuration>
@@ -79,5 +85,21 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.1.2</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>
