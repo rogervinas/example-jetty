@@ -14,8 +14,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>14</maven.compiler.source>
-    <maven.compiler.target>14</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -31,6 +29,47 @@
       <version>9.4.30.v20200611</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jdk</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <maven.compiler.source>14</maven.compiler.source>
+        <maven.compiler.target>14</maven.compiler.target>
+      </properties>
+    </profile>
+    <profile>
+      <id>javax</id>
+      <properties>
+        <maven.compiler.source>14</maven.compiler.source>
+        <maven.compiler.target>14</maven.compiler.target>
+      </properties>
+    </profile>
+    <profile>
+      <id>org</id>
+      <repositories>
+        <repository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/CRaC/org.crac</url>
+        </repository>
+      </repositories>
+      <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.crac</groupId>
+          <artifactId>crac</artifactId>
+          <version>999-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 
   <build>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
@@ -90,6 +129,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.1.2</version>
+        <configuration>
+          <useBaseVersion>false</useBaseVersion>
+        </configuration>
         <executions>
           <execution>
             <id>copy-dependencies</id>

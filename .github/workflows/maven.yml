@@ -1,0 +1,109 @@
+
+name: Maven Package
+
+on:
+  push:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: jdk
+            test_jdk: jdk-crac
+            build_jdk: jdk14-crac
+          - api: javax
+            test_jdk: javax-crac
+            build_jdk: jdk14-crac
+          - api: org
+            test_jdk: jdk-crac
+            build_jdk:
+
+    steps:
+    - name: Install prerequisites
+      run:
+        sudo
+        DEBIAN_FRONTEND=noninteractive
+        apt-get -y --no-install-recommends install
+          siege
+
+    - uses: actions/checkout@v2
+
+    - name: Checkout utils
+      uses: actions/checkout@v2
+      with:
+        repository: CRaC/utils
+        path: utils
+
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Download JDK
+      run: |
+        utils/download-jdk.sh ${{ matrix.test_jdk }}
+        sudo tar -axf jdk14-crac.tar.gz
+
+    - name: Use specific API
+      if: matrix.api != 'jdk'
+      run: |
+        find -name '*.java' | xargs sed -i 's/jdk\.crac/${{ matrix.api }}.crac/g'
+        git diff
+
+    - run: mvn -B package -P${{ matrix.api }}
+      env:
+        JAVA_HOME: ${{ matrix.build_jdk }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test on Vanila JDK
+      run: |
+        P=$(utils/start-bg.sh \
+          -s "Server:main: Started" \
+          java -jar target/example-jetty-1.0-SNAPSHOT.jar)
+        curl localhost:8080 | grep "Hello World"
+        utils/bench.sh http://localhost:8080
+        kill $P
+      if: matrix.api == 'org'
+
+    - name: Prepare warm checkpoint
+      run: |
+        P=$(utils/start-bg.sh \
+        -s "Server:main: Started" \
+        -e exitcode \
+          jdk14-crac/bin/java \
+          -XX:CRaCCheckpointTo=cr \
+          -XX:+UnlockDiagnosticVMOptions \
+          -XX:+CRTraceStartupTime \
+          -Djdk.crac.trace-startup-time=true \
+          -jar target/example-jetty-1.0-SNAPSHOT.jar)
+
+        # warmup the service
+        utils/bench.sh http://localhost:8080
+        jcmd $P JDK.checkpoint
+        [ 137 = $(utils/read-exitcode.sh exitcode) ]
+
+    - name: Test on C/RaC
+      run: |
+        P=$(utils/start-bg.sh \
+          -s "restore-finish" \
+          jdk14-crac/bin/java -XX:CRaCRestoreFrom=cr)
+        curl localhost:8080 | grep "Hello World"
+        utils/bench.sh http://localhost:8080
+        kill $P
+
+    - name: Test C/RaC startup time
+      run:
+        timeout 3 bash -c "jdk14-crac/lib/javatime ; jdk14-crac/bin/java -XX:CRaCRestoreFrom=cr"
+        | utils/sel.awk -v from=prestart -v to=restore-finish
