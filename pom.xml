@@ -50,21 +50,15 @@
     </profile>
     <profile>
       <id>org</id>
-      <repositories>
-        <repository>
-          <id>github</id>
-          <url>https://maven.pkg.github.com/CRaC/org.crac</url>
-        </repository>
-      </repositories>
       <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
       </properties>
       <dependencies>
         <dependency>
-          <groupId>org.crac</groupId>
-          <artifactId>crac</artifactId>
-          <version>999-SNAPSHOT</version>
+          <groupId>io.github.crac</groupId>
+          <artifactId>org-crac</artifactId>
+          <version>0.1.0</version>
         </dependency>
       </dependencies>
     </profile>

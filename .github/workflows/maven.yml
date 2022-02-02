@@ -3,8 +3,6 @@ name: Maven Package
 
 on:
   push:
-  schedule:
-    - cron: '0 0 * * *'
 
 jobs:
   build:
@@ -15,13 +13,10 @@ jobs:
       matrix:
         include:
           - api: jdk
-            test_jdk: jdk-crac
-            build_jdk: jdk14-crac
+            build_jdk: crac
           - api: javax
-            test_jdk: javax-crac
-            build_jdk: jdk14-crac
+            build_jdk: crac
           - api: org
-            test_jdk: jdk-crac
             build_jdk:
 
     steps:
@@ -40,6 +35,8 @@ jobs:
         repository: CRaC/utils
         path: utils
 
+    - run: make -C utils
+
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1
       with:
@@ -53,8 +50,9 @@ jobs:
 
     - name: Download JDK
       run: |
-        utils/download-jdk.sh ${{ matrix.test_jdk }}
-        sudo tar -axf jdk14-crac.tar.gz
+        archive=$(utils/download-jdk.sh)
+        sudo tar -axf $archive
+        echo JDK=${archive%%.tar.gz} >> $GITHUB_ENV
 
     - name: Use specific API
       if: matrix.api != 'jdk'
@@ -62,10 +60,11 @@ jobs:
         find -name '*.java' | xargs sed -i 's/jdk\.crac/${{ matrix.api }}.crac/g'
         git diff
 
-    - run: mvn -B package -P${{ matrix.api }}
-      env:
-        JAVA_HOME: ${{ matrix.build_jdk }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: |
+        if [ ${{ matrix.build_jdk }} = crac ]; then
+          export JAVA_HOME=${{ env.JDK }}
+        fi
+        mvn -B package -P${{ matrix.api }}
 
     - name: Test on Vanila JDK
       run: |
@@ -82,7 +81,7 @@ jobs:
         P=$(utils/start-bg.sh \
         -s "Server:main: Started" \
         -e exitcode \
-          jdk14-crac/bin/java \
+          ${{ env.JDK }}/bin/java \
           -XX:CRaCCheckpointTo=cr \
           -XX:+UnlockDiagnosticVMOptions \
           -XX:+CRTraceStartupTime \
@@ -98,12 +97,12 @@ jobs:
       run: |
         P=$(utils/start-bg.sh \
           -s "restore-finish" \
-          jdk14-crac/bin/java -XX:CRaCRestoreFrom=cr)
+          ${{ env.JDK }}/bin/java -XX:CRaCRestoreFrom=cr)
         curl localhost:8080 | grep "Hello World"
         utils/bench.sh http://localhost:8080
         kill $P
 
     - name: Test C/RaC startup time
       run:
-        timeout 3 bash -c "jdk14-crac/lib/javatime ; jdk14-crac/bin/java -XX:CRaCRestoreFrom=cr"
+        timeout 3 bash -c "utils/lib/javatime ; ${{ env.JDK }}/bin/java -XX:CRaCRestoreFrom=cr"
         | utils/sel.awk -v from=prestart -v to=restore-finish
