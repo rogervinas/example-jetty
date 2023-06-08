@@ -55,9 +55,9 @@ jobs:
         echo JDK=${archive%%.tar.gz} >> $GITHUB_ENV
 
     - name: Use specific API
-      if: matrix.api != 'jdk'
+      if: matrix.api != 'org'
       run: |
-        find -name '*.java' | xargs sed -i 's/jdk\.crac/${{ matrix.api }}.crac/g'
+        find -name '*.java' | xargs sed -i 's/org\.crac/${{ matrix.api }}.crac/g'
         git diff
 
     - run: |

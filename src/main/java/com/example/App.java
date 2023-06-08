@@ -7,9 +7,9 @@ import java.io.IOException;
 
 // org.crac could be used instead of jdk.crac
 // https://github.com/CRaC/docs#orgcrac
-import jdk.crac.Context;
-import jdk.crac.Core;
-import jdk.crac.Resource;
+import org.crac.Context;
+import org.crac.Core;
+import org.crac.Resource;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
