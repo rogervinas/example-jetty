@@ -5,8 +5,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
 
-// org.crac could be used instead of jdk.crac
-// https://github.com/CRaC/docs#orgcrac
 import org.crac.Context;
 import org.crac.Core;
 import org.crac.Resource;
