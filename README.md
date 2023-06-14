@@ -11,7 +11,7 @@ For more info, check:
 ```
 docker build -t zulu-crac .
 
-mvn clean package
+./mvnw clean package
 java -jar target/example-jetty-1.0-SNAPSHOT.jar
 curl -i http://localhost:8080
 
