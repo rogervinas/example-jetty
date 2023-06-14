@@ -4,6 +4,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.crac.Context;
 import org.crac.Core;
@@ -13,6 +16,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 class ServerManager implements Resource
 {
@@ -50,9 +55,53 @@ class ServerManager implements Resource
     }
 }
 
+class Counter implements Resource {
+
+    private int counter = 0;
+    private ScheduledExecutorService executor;
+    private static final Logger LOG = Log.getLogger(Counter.class);
+
+    public Counter() {
+        Core.getGlobalContext().register(this);
+    }
+
+    public void start() {
+        LOG.info("start");
+        executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleWithFixedDelay(this::count, 1, 5, TimeUnit.SECONDS);
+    }
+
+    public void stop() {
+        LOG.info("stop");
+        executor.shutdown();
+    }
+
+    public int counter() {
+        return counter;
+    }
+
+    private Void count() {
+        counter++;
+        LOG.info("count " + counter);
+        return null;
+    }
+
+    @Override
+    public void beforeCheckpoint(Context<? extends Resource> context) throws Exception {
+        stop();
+    }
+
+    @Override
+    public void afterRestore(Context<? extends Resource> context) throws Exception {
+        start();
+    }
+}
+
 public class App extends AbstractHandler
 {
     static ServerManager serverManager;
+
+    static Counter counter = new Counter();
 
     public void handle(String target,
                        Request baseRequest,
@@ -63,10 +112,22 @@ public class App extends AbstractHandler
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
-        response.getWriter().println("Hello World");
+        response.getWriter().println("Hello World counter is " + counter.counter());
     }
 
-    public static void main( String[] args ) throws Exception
+    @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+        counter.start();
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        super.doStop();
+        counter.stop();
+    }
+
+    public static void main(String[] args ) throws Exception
     {
         serverManager = new ServerManager(8080, new App());
     }
