@@ -1,0 +1,8 @@
+FROM zulu-crac:latest
+
+COPY target/example-jetty-1.0-SNAPSHOT.jar /opt/mnt/target/
+COPY target/dependency /opt/mnt/target/dependency
+
+COPY crac /opt/mnt/crac
+
+ENTRYPOINT java -XX:CRaCRestoreFrom=/opt/mnt/crac
