@@ -26,5 +26,5 @@ jcmd 129 JDK.checkpoint
 java -XX:CRaCRestoreFrom=/opt/mnt/crac
 
 docker build -t example-jetty-crac-restore -f Dockerfile.restore .
-docker run --rm -p 8080:8080 --name example-jetty-crac-restore example-jetty-crac-restore
+docker run -it --rm -p 8080:8080 --name example-jetty-crac-restore example-jetty-crac-restore
 ```
